@@ -1,5 +1,8 @@
+from config import settings
+
+
 def main():
-    print("Hello from uforce-knowledge-base-generator!")
+    print(settings)
 
 
 if __name__ == "__main__":
