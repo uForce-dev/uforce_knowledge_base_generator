@@ -31,6 +31,13 @@ class PostRepository:
             .all()
         )
 
-    def get_thread_posts(self, thread_id: str) -> List[Type[Post]]:
-        """Returns all posts belonging to a specific thread, ordered by creation time."""
-        return self.db.query(Post).filter(Post.RootId == thread_id).order_by(Post.CreateAt).all()
+    def get_posts_by_ids_or_root_ids(self, post_ids: List[str]) -> List[Type[Post]]:
+        """
+        Returns posts whose Id is in post_ids, or whose RootId is in post_ids.
+        This effectively fetches all posts belonging to the threads identified by post_ids.
+        """
+        if not post_ids:
+            return []
+        return self.db.query(Post).filter(
+            (Post.Id.in_(post_ids)) | (Post.RootId.in_(post_ids))
+        ).order_by(Post.CreateAt).all()
