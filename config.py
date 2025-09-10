@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMP_DIR = BASE_DIR / "temp"
+SECRETS_DIR = BASE_DIR / "secrets"
 LOGS_DIR = BASE_DIR / "logs"
 ENV_FILE = BASE_DIR / ".env"
 
@@ -32,6 +33,7 @@ class DatabaseSettings(BaseSettings):
 
 class Settings(BaseSettings):
     base_dir: Path = BASE_DIR
+    secrets_dir: Path = SECRETS_DIR
     temp_dir: Path = TEMP_DIR
     logs_dir: Path = LOGS_DIR
     env_file: Path = ENV_FILE
@@ -44,7 +46,7 @@ class Settings(BaseSettings):
 
     @computed_field
     def google_account_file(self) -> Path:
-        return self.base_dir / self.google_account_file_name
+        return self.secrets_dir / self.google_account_file_name
 
 
 settings = Settings()  # noqa

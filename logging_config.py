@@ -1,15 +1,11 @@
 import logging
-import os
 
 from config import settings
 
 
 def setup_logging() -> None:
     """Configures the logging for the application."""
-    log_dir = settings.logs_dir
-    os.makedirs(log_dir, exist_ok=True)
-
-    log_file = log_dir / "app.log"
+    log_file = settings.logs_dir / "app.log"
 
     # Create a logger
     logger = logging.getLogger()

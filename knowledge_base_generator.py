@@ -1,6 +1,5 @@
 import datetime
 import logging
-import os
 import re
 from typing import Set, List, Dict
 
@@ -9,11 +8,9 @@ from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
 from config import settings
-from logging_config import setup_logging
 from models import Post
 from repository import PostRepository
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -48,7 +45,6 @@ def process_mattermost_posts(db: Session) -> None:
     and saves them into weekly chunk files.
     """
     repo = PostRepository(db)
-    os.makedirs(settings.temp_dir, exist_ok=True)
     logger.info(f"Ensured temp directory exists: {settings.temp_dir}")
 
     start_ts, max_ts = repo.get_posts_date_range_last_three_months()
