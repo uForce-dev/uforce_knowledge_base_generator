@@ -1,7 +1,12 @@
 from config import settings
 
 
-def main():
+def initialize() -> None:
+    settings.temp_dir.mkdir(exist_ok=True)
+
+
+def main() -> None:
+    initialize()
     print(settings)
 
 

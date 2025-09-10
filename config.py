@@ -3,6 +3,7 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent
+TEMP_DIR = BASE_DIR / "temp"
 ENV_FILE = BASE_DIR / ".env"
 
 
@@ -19,6 +20,7 @@ class DatabaseSettings(BaseSettings):
 class Settings(BaseSettings):
     base_dir: Path = BASE_DIR
     env_file: Path = ENV_FILE
+    temp_dir: Path = TEMP_DIR
 
     db: DatabaseSettings = DatabaseSettings()  # noqa
 
