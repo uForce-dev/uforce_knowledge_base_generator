@@ -1,20 +1,11 @@
-from typing import Generator
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-
+from sqlalchemy.orm import sessionmaker
 from config import settings
 
-DATABASE_URL = (
-    f"postgresql://{settings.db.user}:{settings.db.password}@"
-    f"{settings.db.host}:{settings.db.port}/{settings.db.name}"
-)
-
-engine = create_engine(DATABASE_URL)
+engine = create_engine(settings.db.mysql_connection_str)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
-def get_db() -> Generator[Session, None, None]:
+def get_db():
     db = SessionLocal()
     try:
         yield db

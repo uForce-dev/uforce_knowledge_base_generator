@@ -1,13 +1,13 @@
-from config import settings
-
-
-def initialize() -> None:
-    settings.temp_dir.mkdir(exist_ok=True)
+from database import get_db
+from knowledge_base_generator import process_mattermost_posts
 
 
 def main() -> None:
-    initialize()
-    print(settings)
+    db_session = next(get_db())
+    try:
+        process_mattermost_posts(db_session)
+    finally:
+        db_session.close()
 
 
 if __name__ == "__main__":

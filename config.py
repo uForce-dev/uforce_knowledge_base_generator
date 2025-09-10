@@ -17,6 +17,18 @@ class DatabaseSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="DB_", extra="ignore")
 
+    @computed_field()
+    @property
+    def mysql_connection_str(self) -> str:
+        return (
+            f"mysql+pymysql://"
+            f"{settings.db.user}:"
+            f"{settings.db.password}@"
+            f"{settings.db.host}:"
+            f"{settings.db.port}/"
+            f"{settings.db.name}"
+        )
+
 
 class Settings(BaseSettings):
     base_dir: Path = BASE_DIR
@@ -29,7 +41,8 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=ENV_FILE, extra="ignore")
 
-    @computed_field
+    @computed_field()
+    @property
     def google_account_file(self) -> Path:
         return self.base_dir / self.google_account_file_name
 

@@ -4,7 +4,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     JSON,
-    ARRAY,
+    Text,
 )
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -14,21 +14,21 @@ Base = declarative_base()
 class Post(Base):
     __tablename__ = "Posts"
 
-    Id = Column(String, primary_key=True, index=True)
+    Id = Column(String(26), primary_key=True, index=True)
     CreateAt = Column(BigInteger)
     UpdateAt = Column(BigInteger)
     DeleteAt = Column(BigInteger)
-    UserId = Column(String)
-    ChannelId = Column(String)
-    RootId = Column(String, nullable=True)
-    OriginalId = Column(String, nullable=True)
-    Message = Column(String)
-    Type = Column(String)
+    UserId = Column(String(26))
+    ChannelId = Column(String(26))
+    RootId = Column(String(26), nullable=True)
+    OriginalId = Column(String(26), nullable=True)
+    Message = Column(Text)
+    Type = Column(String(50))
     Props = Column(JSON)
-    Hashtags = Column(String, nullable=True)
-    Filenames = Column(ARRAY(String))
-    FileIds = Column(ARRAY(String))
+    Hashtags = Column(Text, nullable=True)
+    Filenames = Column(JSON)
+    FileIds = Column(JSON)
     HasReactions = Column(Boolean)
     EditAt = Column(BigInteger)
     IsPinned = Column(Boolean)
-    RemoteId = Column(String, nullable=True)
+    RemoteId = Column(String(26), nullable=True)
