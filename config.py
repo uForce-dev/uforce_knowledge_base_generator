@@ -34,4 +34,4 @@ class Settings(BaseSettings):
         return self.base_dir / self.google_account_file_name
 
 
-settings = Settings()
+settings = Settings()  # noqa
