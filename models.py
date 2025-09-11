@@ -32,3 +32,10 @@ class Post(Base):
     EditAt = Column(BigInteger)
     IsPinned = Column(Boolean)
     RemoteId = Column(String(26), nullable=True)
+
+
+class User(Base):
+    __tablename__ = "Users"
+
+    Id = Column(String(26), primary_key=True, index=True)
+    Username = Column(String(64), nullable=False)

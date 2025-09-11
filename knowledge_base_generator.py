@@ -1,7 +1,6 @@
 import datetime
 import logging
 import re
-from typing import Set, List, Dict
 
 import markdown
 from bs4 import BeautifulSoup
@@ -19,21 +18,12 @@ def clean_text(text: str) -> str:
     if not text:
         return ""
 
-    # Convert markdown to HTML
     html = markdown.markdown(text)
-
-    # Strip HTML tags to get plain text
     soup = BeautifulSoup(html, "html.parser")
     plain_text = soup.get_text(separator=' ')
-
-    # Remove mentions (which might survive the markdown conversion)
     plain_text = re.sub(r'@[a-zA-Z0-9_.]+', '', plain_text)
-
-    # Remove emojis
     plain_text = re.sub(r'[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF]+', '',
                         plain_text)
-
-    # Normalize whitespace
     plain_text = re.sub(r'\s+', ' ', plain_text).strip()
 
     return plain_text
@@ -64,46 +54,43 @@ def process_mattermost_posts(db: Session) -> None:
 
         logger.info(f"Processing week: {current_date.strftime('%Y-%m-%d')} - {week_end_dt.strftime('%Y-%m-%d')}")
 
-        # Fetch root posts for the current week
-        root_posts_in_week: List[Post] = repo.get_root_posts_in_date_range(week_start_ts, week_end_ts)
+        root_posts_in_week: list[Post] = repo.get_root_posts_in_date_range(week_start_ts, week_end_ts)
 
         if not root_posts_in_week:
             logger.info(f"No root posts found for week starting {current_date.strftime('%Y-%m-%d')}. Skipping.")
             current_date += datetime.timedelta(days=7)
             continue
 
-        # Collect all root post IDs for batch fetching
         root_post_ids = [post.Id for post in root_posts_in_week]
+        all_relevant_posts: list[Post] = repo.get_posts_by_ids_or_root_ids(root_post_ids)
 
-        # Fetch all posts (root and replies) related to these root_post_ids in one go
-        all_relevant_posts: List[Post] = repo.get_posts_by_ids_or_root_ids(root_post_ids)
+        user_ids = {post.UserId for post in all_relevant_posts}
+        users = repo.get_users_by_ids(list(user_ids))
+        user_map = {user.Id: user.Username for user in users}
 
-        # Reconstruct threads in memory
-        threads: Dict[str, List[Post]] = {root_id: [] for root_id in root_post_ids}
+        threads: dict[str, list[Post]] = {root_id: [] for root_id in root_post_ids}
         for post in all_relevant_posts:
-            if post.RootId and post.RootId in threads:  # It's a reply to a root post we care about
+            if post.RootId and post.RootId in threads:
                 threads[post.RootId].append(post)
-            elif post.Id in threads:  # It's a root post itself
-                threads[post.Id].insert(0, post)  # Insert at the beginning to keep root first
+            elif post.Id in threads:
+                threads[post.Id].insert(0, post)
 
-        chunk_content: List[str] = []
-        processed_threads_ids: Set[str] = set()
+        chunk_content: list[str] = []
+        processed_threads_ids: set[str] = set()
 
         for root_post in root_posts_in_week:
             if root_post.Id in processed_threads_ids:
                 continue
 
-            # Get the posts for this specific thread from our in-memory reconstructed threads
             thread_posts_list = threads.get(root_post.Id, [])
-
-            # Sort thread posts by creation time to maintain chronological order
             thread_posts_list.sort(key=lambda p: p.CreateAt)
 
             for post in thread_posts_list:
                 if post.Message:
                     cleaned_message = clean_text(post.Message)
+                    username = user_map.get(post.UserId, f"user_{post.UserId}")
                     if cleaned_message:
-                        chunk_content.append(f"user: {post.UserId}, message: {cleaned_message}")
+                        chunk_content.append(f"timestamp: {post.CreateAt}, user: {username}, message: {cleaned_message}")
 
             processed_threads_ids.add(root_post.Id)
 
@@ -118,7 +105,7 @@ def process_mattermost_posts(db: Session) -> None:
             f"category: Posts\n"
             f"date_range_start: {current_date.strftime('%Y-%m-%d')}\n"
             f"date_range_end: {week_end_dt.strftime('%Y-%m-%d')}\n"
-            f"data_format: plain_text\n"
+            f"data_format: Each line represents a post in the format 'timestamp: <unix_timestamp_ms>, user: <username>, message: <cleaned_message>'.\n"
             f"---\n\n"
         )
 
