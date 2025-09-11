@@ -8,13 +8,13 @@ import docx
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 
 from src.config import settings
 
 logger = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 
 def clean_text(text: str) -> str:
@@ -39,7 +39,7 @@ def clean_text(text: str) -> str:
         "\u23cf"
         "\u23e9"
         "\u231a"
-        "\ufe0f"
+        "\ufe0f"  # dingbats
         "\u3030"
         "]+",
         flags=re.UNICODE,
@@ -76,6 +76,8 @@ def list_files_recursive(service, folder_id: str, parent_path: str = "") -> list
                 q=query,
                 pageSize=1000,
                 fields="nextPageToken, files(id, name, mimeType, parents)",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
             )
             .execute()
         )
@@ -99,7 +101,7 @@ def list_files_recursive(service, folder_id: str, parent_path: str = "") -> list
 
 def download_file(service, file_id: str) -> io.BytesIO | None:
     try:
-        request = service.files().get_media(fileId=file_id)
+        request = service.files().get_media(fileId=file_id, supportsAllDrives=True)
         file_stream = io.BytesIO()
         downloader = MediaIoBaseDownload(file_stream, request)
         done = False
@@ -111,6 +113,70 @@ def download_file(service, file_id: str) -> io.BytesIO | None:
     except HttpError as error:
         logger.error(f"An error occurred while downloading file {file_id}: {error}")
     return None
+
+
+def upload_file_to_gdrive(service, file_path: Path, folder_id: str):
+    try:
+        file_metadata = {"name": file_path.name, "parents": [folder_id]}
+        media = MediaFileUpload(str(file_path), mimetype="text/plain")
+        file = (
+            service.files()
+            .create(
+                body=file_metadata,
+                media_body=media,
+                fields="id",
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
+        logger.info(
+            f"File '{file_path.name}' uploaded to Google Drive with ID: {file.get('id')}"
+        )
+    except HttpError as error:
+        logger.error(f"An error occurred while uploading {file_path.name}: {error}")
+    except Exception as e:
+        logger.error(
+            f"An unexpected error occurred during upload of {file_path.name}: {e}"
+        )
+
+
+def delete_files_in_folder(service, folder_id: str):
+    try:
+        query = f"'{folder_id}' in parents and trashed=false"
+        results = (
+            service.files()
+            .list(
+                q=query,
+                fields="files(id, name)",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+            )
+            .execute()
+        )
+        items = results.get("files", [])
+        if not items:
+            logger.info(f"No files found in folder ID: {folder_id} to delete.")
+            return
+
+        logger.info(f"Found {len(items)} files to delete in folder ID: {folder_id}.")
+        for item in items:
+            try:
+                service.files().delete(
+                    fileId=item["id"], supportsAllDrives=True,
+                ).execute()
+                logger.info(f"Deleted file: {item['name']} (ID: {item['id']})")
+            except HttpError as error:
+                logger.error(
+                    f"Failed to delete file {item['name']} (ID: {item['id']}): {error}"
+                )
+    except HttpError as error:
+        logger.error(
+            f"An error occurred while listing files for deletion in folder {folder_id}: {error}"
+        )
+    except Exception as e:
+        logger.error(
+            f"An unexpected error occurred during file deletion in folder {folder_id}: {e}"
+        )
 
 
 def extract_text_from_docx(file_stream: io.BytesIO) -> str:
@@ -130,7 +196,12 @@ def process_teamly_documents() -> None:
         return
 
     source_folder_id = settings.google_drive_source_dir_id
+    processed_folder_id = settings.google_drive_processed_dir_id
     logger.info(f"Fetching files from Google Drive folder ID: {source_folder_id}")
+
+    logger.info(f"Clearing processed folder ID: {processed_folder_id}...")
+    delete_files_in_folder(service, processed_folder_id)
+    logger.info("Processed folder cleared.")
 
     all_files = list_files_recursive(service, source_folder_id)
     docx_files = [f for f in all_files if f["name"].endswith(".docx")]
@@ -177,6 +248,10 @@ def process_teamly_documents() -> None:
                 f.write(metadata)
                 f.write(text_content)
             logger.info(f"Generated file: {output_file_path}")
+
+            logger.info(f"Uploading {output_file_path.name} to Google Drive...")
+            upload_file_to_gdrive(service, output_file_path, processed_folder_id)
+
         except IOError as e:
             logger.error(f"Error writing to file {output_file_path}: {e}")
 
