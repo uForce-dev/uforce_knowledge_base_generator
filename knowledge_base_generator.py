@@ -58,7 +58,7 @@ def process_mattermost_posts(db: Session) -> None:
     current_date = start_date
     while current_date <= end_date:
         period_start_dt = current_date
-        period_end_dt = period_start_dt + datetime.timedelta(days=14)
+        period_end_dt = period_start_dt + datetime.timedelta(days=settings.search_period_days)
         period_start_ts = int(period_start_dt.timestamp() * 1000)
         period_end_ts = int(period_end_dt.timestamp() * 1000)
 
@@ -135,7 +135,7 @@ def process_mattermost_posts(db: Session) -> None:
             except IOError as e:
                 logger.error(f"Error writing to file {file_path}: {e}")
 
-        current_date += datetime.timedelta(days=14)
+        current_date += datetime.timedelta(days=settings.search_period_days)
 
 
 if __name__ == "__main__":
