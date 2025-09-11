@@ -125,7 +125,7 @@ def process_mattermost_posts(db: Session) -> None:
             )
 
             file_name = f"mattermost_posts_{channel_name}_{period_start_dt.strftime('%Y-%m-%d')}_to_{period_end_dt.strftime('%Y-%m-%d')}.txt"
-            file_path = settings.temp_dir / file_name
+            file_path = settings.mattermost_temp_dir / file_name
 
             try:
                 with open(file_path, 'w', encoding='utf-8') as f:

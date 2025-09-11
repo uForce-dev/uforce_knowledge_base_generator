@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMP_DIR = BASE_DIR / "temp"
+MATTERMOST_TEMP_DIR = TEMP_DIR / "mattermost"
 SECRETS_DIR = BASE_DIR / "secrets"
 LOGS_DIR = BASE_DIR / "logs"
 ENV_FILE = BASE_DIR / ".env"
@@ -35,6 +36,7 @@ class Settings(BaseSettings):
     base_dir: Path = BASE_DIR
     secrets_dir: Path = SECRETS_DIR
     temp_dir: Path = TEMP_DIR
+    mattermost_temp_dir: Path = MATTERMOST_TEMP_DIR
     logs_dir: Path = LOGS_DIR
     env_file: Path = ENV_FILE
 

@@ -14,9 +14,12 @@ def initialize() -> None:
 
     settings.logs_dir.mkdir(exist_ok=True)
     settings.secrets_dir.mkdir(exist_ok=True)
+
     if settings.temp_dir.exists():
         shutil.rmtree(settings.temp_dir)
+
     settings.temp_dir.mkdir(exist_ok=True)
+    settings.mattermost_temp_dir.mkdir(exist_ok=True)
 
 
 def main() -> None:
