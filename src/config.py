@@ -45,8 +45,9 @@ class Settings(BaseSettings):
     env_file: Path = ENV_FILE
 
     google_account_file_name: str
-    google_drive_source_dir_id: str
-    google_drive_processed_dir_id: str
+    google_drive_teamly_source_dir_id: str
+    google_drive_teamly_processed_dir_id: str
+    google_drive_mattermost_processed_dir_id: str
     mattermost_channel_ids: str
     processing_chunk_days: int
     total_search_period_days: int

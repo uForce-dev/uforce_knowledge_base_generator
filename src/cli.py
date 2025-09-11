@@ -5,6 +5,7 @@ import shutil
 from src.config import settings
 from src.database import get_db
 from src.logging_config import setup_logging
+from src.processors.mattermost import process_mattermost_posts
 from src.processors.teamly import process_teamly_documents
 
 logger = logging.getLogger(__name__)
@@ -43,15 +44,15 @@ def main() -> None:
 
     db_session = next(get_db())
     try:
-        # if run_mattermost:
-        #     logger.info("Starting Mattermost knowledge base generation.")
-        #     process_mattermost_posts(db_session)
-        #     logger.info("Mattermost knowledge base generation finished.")
+        if run_mattermost:
+            logger.info("Starting Mattermost knowledge base generation.")
+            process_mattermost_posts(db_session)
+            logger.info("Mattermost knowledge base generation finished.")
 
-        if run_teamly:
-            logger.info("Starting Teamly knowledge base generation.")
-            process_teamly_documents()
-            logger.info("Teamly knowledge base generation finished.")
+        # if run_teamly:
+        #     logger.info("Starting Teamly knowledge base generation.")
+        #     process_teamly_documents()
+        #     logger.info("Teamly knowledge base generation finished.")
 
     except Exception as e:
         logger.critical(f"An unhandled error occurred: {e}", exc_info=True)

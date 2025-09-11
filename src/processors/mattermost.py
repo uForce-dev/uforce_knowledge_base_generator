@@ -9,6 +9,11 @@ from sqlalchemy.orm import Session
 from src.config import settings
 from src.models import Post
 from src.repository import PostRepository
+from src.utils.gdrive_utils import (
+    get_gdrive_service,
+    upload_file_to_gdrive,
+    delete_files_in_folder,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +39,20 @@ def process_mattermost_posts(db: Session) -> None:
     processes them, and saves them into chunk files per channel per configured period.
     """
     repo = PostRepository(db)
+
+    gdrive_service = get_gdrive_service()
+    if not gdrive_service:
+        logger.error("Could not get Google Drive service. Aborting Mattermost processing.")
+        return
+
+    gdrive_folder_id = settings.google_drive_mattermost_processed_dir_id
+    if not gdrive_folder_id:
+        logger.error("Mattermost processed folder ID is not set in settings. Aborting.")
+        return
+
+    logger.info(f"Clearing Google Drive folder ID: {gdrive_folder_id} for Mattermost files...")
+    delete_files_in_folder(gdrive_service, gdrive_folder_id)
+
     logger.info(f"Ensured temp directory exists: {settings.temp_dir}")
 
     channel_ids_to_process = settings.mattermost_channel_ids_list
@@ -150,6 +169,10 @@ def process_mattermost_posts(db: Session) -> None:
                     f.write(metadata)
                     f.write("\n".join(chunk_content))
                 logger.info(f"Generated file: {file_path}")
+
+                logger.info(f"Uploading {file_path.name} to Google Drive...")
+                upload_file_to_gdrive(gdrive_service, file_path, gdrive_folder_id)
+
             except IOError as e:
                 logger.error(f"Error writing to file {file_path}: {e}")
 
