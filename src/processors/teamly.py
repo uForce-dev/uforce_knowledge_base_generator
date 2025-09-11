@@ -120,18 +120,13 @@ def process_teamly_documents() -> None:
             continue
 
         relative_path = Path(file_info['path'])
-        output_path = settings.teamly_temp_dir / relative_path.parent
-        output_path.mkdir(parents=True, exist_ok=True)
-
-        txt_file_name = relative_path.with_suffix('.txt').name
-        output_file_path = output_path / txt_file_name
+        flat_file_name = str(relative_path.with_suffix('.txt')).replace(os.path.sep, '_')
+        output_file_path = settings.teamly_temp_dir / flat_file_name
 
         metadata = (
             f"---\n"
-            f"source: Teamly\n"
+            f"source: Teamly Google Drive\n"
             f"category: {relative_path.parent}\n"
-            f"original_file: {file_info['name']}\n"
-            f"google_drive_file_id: {file_info['id']}\n"
             f"data_format: 'plain_text'\n"
             f"---\n\n"
         )
