@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Post, User, Channel
+from src.models import Post, Channel, User
 
 
 class PostRepository:

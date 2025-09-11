@@ -6,9 +6,9 @@ import markdown
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
-from config import settings
-from models import Post
-from repository import PostRepository
+from src.config import settings
+from src.models import Post
+from src.repository import PostRepository
 
 logger = logging.getLogger(__name__)
 
@@ -136,17 +136,3 @@ def process_mattermost_posts(db: Session) -> None:
                 logger.error(f"Error writing to file {file_path}: {e}")
 
         current_date += datetime.timedelta(days=settings.processing_chunk_days)
-
-
-if __name__ == "__main__":
-    from database import get_db
-
-    logger.info("Starting Mattermost knowledge base generation.")
-    db_session = next(get_db())
-    try:
-        process_mattermost_posts(db_session)
-    except Exception as e:
-        logger.critical(f"An unhandled error occurred: {e}", exc_info=True)
-    finally:
-        db_session.close()
-        logger.info("Mattermost knowledge base generation finished. Database session closed.")

@@ -3,9 +3,10 @@ from pathlib import Path
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 TEMP_DIR = BASE_DIR / "temp"
 MATTERMOST_TEMP_DIR = TEMP_DIR / "mattermost"
+TEAMLY_TEMP_DIR = TEMP_DIR / "teamly"
 SECRETS_DIR = BASE_DIR / "secrets"
 LOGS_DIR = BASE_DIR / "logs"
 ENV_FILE = BASE_DIR / ".env"
@@ -37,10 +38,13 @@ class Settings(BaseSettings):
     secrets_dir: Path = SECRETS_DIR
     temp_dir: Path = TEMP_DIR
     mattermost_temp_dir: Path = MATTERMOST_TEMP_DIR
+    teamly_temp_dir: Path = TEAMLY_TEMP_DIR
     logs_dir: Path = LOGS_DIR
     env_file: Path = ENV_FILE
 
     google_account_file_name: str
+    google_drive_source_dir_id: str = "1LqmsUAcTbZljerTy1qO1BTL568VyYpSP"
+    google_drive_processed_dir_id: str = "1jrxnuCkcui6pmLTEtRi4uQeC_bAdFRaZ"
     mattermost_channel_ids: str
     processing_chunk_days: int
     total_search_period_days: int
