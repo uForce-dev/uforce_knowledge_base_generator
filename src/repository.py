@@ -21,7 +21,9 @@ class PostRepository:
 
         return start_ts, max_ts
 
-    def get_root_posts_in_date_range(self, start_ts: int, end_ts: int, channel_id: str) -> list[Post]:
+    def get_root_posts_in_date_range(
+        self, start_ts: int, end_ts: int, channel_id: str
+    ) -> list[Post]:
         """Returns root posts within a given date range for a specific channel, ordered by creation time."""
         return (
             self.db.query(Post)
@@ -31,7 +33,7 @@ class PostRepository:
                 Post.CreateAt < end_ts,
                 Post.RootId == "",
                 Post.ChannelId == channel_id,
-                Channel.Type.in_(['O', 'P'])
+                Channel.Type.in_(["O", "P"]),
             )
             .order_by(Post.CreateAt)
             .all()
@@ -44,9 +46,12 @@ class PostRepository:
         """
         if not post_ids:
             return []
-        return self.db.query(Post).filter(
-            (Post.Id.in_(post_ids)) | (Post.RootId.in_(post_ids))
-        ).order_by(Post.CreateAt).all()
+        return (
+            self.db.query(Post)
+            .filter((Post.Id.in_(post_ids)) | (Post.RootId.in_(post_ids)))
+            .order_by(Post.CreateAt)
+            .all()
+        )
 
     def get_user_by_id(self, user_id: str) -> User | None:
         """Returns a user by their ID."""

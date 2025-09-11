@@ -20,11 +20,10 @@ def clean_text(text: str) -> str:
 
     html = markdown.markdown(text)
     soup = BeautifulSoup(html, "html.parser")
-    plain_text = soup.get_text(separator=' ')
-    plain_text = re.sub(r'@[a-zA-Z0-9_.]+', '', plain_text)
-    plain_text = re.sub(r'[😀-🙏🌀-🗿🚀-🛿🇠-🇿🤀-🧿☀-➿]+', '',
-                        plain_text)
-    plain_text = re.sub(r'\s+', ' ', plain_text).strip()
+    plain_text = soup.get_text(separator=" ")
+    plain_text = re.sub(r"@[a-zA-Z0-9_.]+", "", plain_text)
+    plain_text = re.sub(r"[😀-🙏🌀-🗿🚀-🛿🇠-🇿🤀-🧿☀-➿]+", "", plain_text)
+    plain_text = re.sub(r"\s+", " ", plain_text).strip()
 
     return plain_text
 
@@ -39,30 +38,42 @@ def process_mattermost_posts(db: Session) -> None:
 
     channel_ids_to_process = settings.mattermost_channel_ids_list
     if not channel_ids_to_process:
-        logger.warning("No Mattermost channel IDs specified in settings. Skipping post processing.")
+        logger.warning(
+            "No Mattermost channel IDs specified in settings. Skipping post processing."
+        )
         return
 
     channels = repo.get_channels_by_ids(channel_ids_to_process)
     channel_map = {channel.Id: channel.Name for channel in channels}
     logger.info(f"Processing posts for channels: {list(channel_map.values())}")
 
-    start_ts, max_ts = repo.get_posts_date_range(days_ago=settings.total_search_period_days)
+    start_ts, max_ts = repo.get_posts_date_range(
+        days_ago=settings.total_search_period_days
+    )
     if not start_ts or not max_ts:
-        logger.info(f"No posts found in the last {settings.total_search_period_days} days.")
+        logger.info(
+            f"No posts found in the last {settings.total_search_period_days} days."
+        )
         return
 
     start_date = datetime.datetime.fromtimestamp(start_ts / 1000)
     end_date = datetime.datetime.fromtimestamp(max_ts / 1000)
-    logger.info(f"Processing posts from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+    logger.info(
+        f"Processing posts from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+    )
 
     current_date = start_date
     while current_date <= end_date:
         period_start_dt = current_date
-        period_end_dt = period_start_dt + datetime.timedelta(days=settings.processing_chunk_days)
+        period_end_dt = period_start_dt + datetime.timedelta(
+            days=settings.processing_chunk_days
+        )
         period_start_ts = int(period_start_dt.timestamp() * 1000)
         period_end_ts = int(period_end_dt.timestamp() * 1000)
 
-        logger.info(f"Processing period: {period_start_dt.strftime('%Y-%m-%d')} - {period_end_dt.strftime('%Y-%m-%d')}")
+        logger.info(
+            f"Processing period: {period_start_dt.strftime('%Y-%m-%d')} - {period_end_dt.strftime('%Y-%m-%d')}"
+        )
 
         for channel_id, channel_name in channel_map.items():
             logger.info(f"Processing channel: {channel_name}")
@@ -72,11 +83,15 @@ def process_mattermost_posts(db: Session) -> None:
             )
 
             if not root_posts_in_period:
-                logger.info(f"No root posts found for channel {channel_name} in this period. Skipping.")
+                logger.info(
+                    f"No root posts found for channel {channel_name} in this period. Skipping."
+                )
                 continue
 
             root_post_ids = [post.Id for post in root_posts_in_period]
-            all_relevant_posts: list[Post] = repo.get_posts_by_ids_or_root_ids(root_post_ids)
+            all_relevant_posts: list[Post] = repo.get_posts_by_ids_or_root_ids(
+                root_post_ids
+            )
 
             user_ids = {post.UserId for post in all_relevant_posts}
             users = repo.get_users_by_ids(list(user_ids))
@@ -105,12 +120,15 @@ def process_mattermost_posts(db: Session) -> None:
                         username = user_map.get(post.UserId, f"user_{post.UserId}")
                         if cleaned_message:
                             chunk_content.append(
-                                f"timestamp: {post.CreateAt}, user: {username}, message: {cleaned_message}")
+                                f"timestamp: {post.CreateAt}, user: {username}, message: {cleaned_message}"
+                            )
 
                 processed_threads_ids.add(root_post.Id)
 
             if not chunk_content:
-                logger.info(f"No content generated for channel {channel_name} in this period. Skipping.")
+                logger.info(
+                    f"No content generated for channel {channel_name} in this period. Skipping."
+                )
                 continue
 
             metadata = (
@@ -128,9 +146,9 @@ def process_mattermost_posts(db: Session) -> None:
             file_path = settings.mattermost_temp_dir / file_name
 
             try:
-                with open(file_path, 'w', encoding='utf-8') as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     f.write(metadata)
-                    f.write('\n'.join(chunk_content))
+                    f.write("\n".join(chunk_content))
                 logger.info(f"Generated file: {file_path}")
             except IOError as e:
                 logger.error(f"Error writing to file {file_path}: {e}")

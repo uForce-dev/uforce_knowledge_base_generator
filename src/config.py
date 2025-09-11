@@ -19,7 +19,9 @@ class DatabaseSettings(BaseSettings):
     host: str
     port: int
 
-    model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="DB_", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=ENV_FILE, env_prefix="DB_", extra="ignore"
+    )
 
     @computed_field
     def mysql_connection_str(self) -> str:

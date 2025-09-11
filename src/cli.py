@@ -5,7 +5,6 @@ import shutil
 from src.config import settings
 from src.database import get_db
 from src.logging_config import setup_logging
-from src.processors.mattermost import process_mattermost_posts
 from src.processors.teamly import process_teamly_documents
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,11 @@ def initialize() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Knowledge Base Generator.")
-    parser.add_argument("processors", nargs="*", help="Specify processors to run: 'mattermost', 'teamly'. Run all if not specified.")
+    parser.add_argument(
+        "processors",
+        nargs="*",
+        help="Specify processors to run: 'mattermost', 'teamly'. Run all if not specified.",
+    )
 
     args = parser.parse_args()
     processors_to_run = args.processors if args.processors else ["mattermost", "teamly"]
