@@ -40,7 +40,8 @@ class Settings(BaseSettings):
 
     google_account_file_name: str
     mattermost_channel_ids: str
-    search_period_days: int
+    processing_chunk_days: int
+    total_search_period_days: int
 
     db: DatabaseSettings = DatabaseSettings()  # noqa
 

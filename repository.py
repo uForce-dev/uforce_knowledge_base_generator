@@ -10,14 +10,14 @@ class PostRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def get_posts_date_range_last_three_months(self) -> tuple[int | None, int | None]:
-        """Returns the start timestamp (3 months ago) and the maximum CreateAt timestamp from the Posts table."""
+    def get_posts_date_range(self, days_ago: int) -> tuple[int | None, int | None]:
+        """Returns the start timestamp (days ago) and the maximum CreateAt timestamp from the Posts table."""
         max_ts = self.db.query(func.max(Post.CreateAt)).scalar()
         if not max_ts:
             return None, None
 
-        three_months_ago_dt = datetime.now() - timedelta(days=90)
-        start_ts = int(three_months_ago_dt.timestamp() * 1000)
+        start_dt = datetime.now() - timedelta(days=days_ago)
+        start_ts = int(start_dt.timestamp() * 1000)
 
         return start_ts, max_ts
 

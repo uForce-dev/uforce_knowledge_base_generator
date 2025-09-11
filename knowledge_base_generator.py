@@ -31,8 +31,8 @@ def clean_text(text: str) -> str:
 
 def process_mattermost_posts(db: Session) -> None:
     """
-    Fetches Mattermost posts from specified channels from the last 3 months,
-    processes them, and saves them into chunk files per channel per 2-week period.
+    Fetches Mattermost posts from specified channels for a configurable period,
+    processes them, and saves them into chunk files per channel per configured period.
     """
     repo = PostRepository(db)
     logger.info(f"Ensured temp directory exists: {settings.temp_dir}")
@@ -46,9 +46,9 @@ def process_mattermost_posts(db: Session) -> None:
     channel_map = {channel.Id: channel.Name for channel in channels}
     logger.info(f"Processing posts for channels: {list(channel_map.values())}")
 
-    start_ts, max_ts = repo.get_posts_date_range_last_three_months()
+    start_ts, max_ts = repo.get_posts_date_range(days_ago=settings.total_search_period_days)
     if not start_ts or not max_ts:
-        logger.info("No posts found in the last 3 months.")
+        logger.info(f"No posts found in the last {settings.total_search_period_days} days.")
         return
 
     start_date = datetime.datetime.fromtimestamp(start_ts / 1000)
@@ -58,7 +58,7 @@ def process_mattermost_posts(db: Session) -> None:
     current_date = start_date
     while current_date <= end_date:
         period_start_dt = current_date
-        period_end_dt = period_start_dt + datetime.timedelta(days=settings.search_period_days)
+        period_end_dt = period_start_dt + datetime.timedelta(days=settings.processing_chunk_days)
         period_start_ts = int(period_start_dt.timestamp() * 1000)
         period_end_ts = int(period_end_dt.timestamp() * 1000)
 
@@ -135,7 +135,7 @@ def process_mattermost_posts(db: Session) -> None:
             except IOError as e:
                 logger.error(f"Error writing to file {file_path}: {e}")
 
-        current_date += datetime.timedelta(days=settings.search_period_days)
+        current_date += datetime.timedelta(days=settings.processing_chunk_days)
 
 
 if __name__ == "__main__":
