@@ -1,4 +1,5 @@
 import logging
+import shutil
 
 from config import settings
 from database import get_db
@@ -11,13 +12,11 @@ logger = logging.getLogger(__name__)
 def initialize() -> None:
     setup_logging()
 
-    dirs_to_create = (
-        settings.temp_dir,
-        settings.logs_dir,
-        settings.secrets_dir,
-    )
-    for directory in dirs_to_create:
-        directory.mkdir(exist_ok=True)
+    settings.logs_dir.mkdir(exist_ok=True)
+    settings.secrets_dir.mkdir(exist_ok=True)
+    if settings.temp_dir.exists():
+        shutil.rmtree(settings.temp_dir)
+    settings.temp_dir.mkdir(exist_ok=True)
 
 
 def main() -> None:
