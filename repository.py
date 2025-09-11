@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Post, User
+from models import Post, User, Channel
 
 
 class PostRepository:
@@ -21,11 +21,18 @@ class PostRepository:
 
         return start_ts, max_ts
 
-    def get_root_posts_in_date_range(self, start_ts: int, end_ts: int) -> list[Post]:
-        """Returns root posts within a given date range, ordered by creation time."""
+    def get_root_posts_in_date_range(self, start_ts: int, end_ts: int, channel_id: str) -> list[Post]:
+        """Returns root posts within a given date range for a specific channel, ordered by creation time."""
         return (
             self.db.query(Post)
-            .filter(Post.CreateAt >= start_ts, Post.CreateAt < end_ts, Post.RootId == "")
+            .join(Channel, Post.ChannelId == Channel.Id)
+            .filter(
+                Post.CreateAt >= start_ts,
+                Post.CreateAt < end_ts,
+                Post.RootId == "",
+                Post.ChannelId == channel_id,
+                Channel.Type.in_(['O', 'P'])
+            )
             .order_by(Post.CreateAt)
             .all()
         )
@@ -50,3 +57,14 @@ class PostRepository:
         if not user_ids:
             return []
         return self.db.query(User).filter(User.Id.in_(user_ids)).all()
+
+    def get_channels_by_ids(self, channel_ids: list[str]) -> list[Channel]:
+        """Returns a list of channels by their IDs."""
+        if not channel_ids:
+            return []
+        return self.db.query(Channel).filter(Channel.Id.in_(channel_ids)).all()
+
+    def get_channel_name_by_id(self, channel_id: str) -> str | None:
+        """Returns a channel's name by its ID."""
+        channel = self.db.query(Channel).filter(Channel.Id == channel_id).first()
+        return channel.Name if channel else None

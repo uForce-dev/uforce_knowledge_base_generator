@@ -39,3 +39,12 @@ class User(Base):
 
     Id = Column(String(26), primary_key=True, index=True)
     Username = Column(String(64), nullable=False)
+
+
+class Channel(Base):
+    __tablename__ = "Channels"
+
+    Id = Column(String(26), primary_key=True, index=True)
+    Type = Column(String(1), nullable=False)
+    DisplayName = Column(String(64), nullable=False)
+    Name = Column(String(64), nullable=False)

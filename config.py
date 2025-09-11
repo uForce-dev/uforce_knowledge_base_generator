@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     env_file: Path = ENV_FILE
 
     google_account_file_name: str
+    mattermost_channel_ids: str
 
     db: DatabaseSettings = DatabaseSettings()  # noqa
 
@@ -47,6 +48,10 @@ class Settings(BaseSettings):
     @computed_field
     def google_account_file(self) -> Path:
         return self.secrets_dir / self.google_account_file_name
+
+    @computed_field
+    def mattermost_channel_ids_list(self) -> list[str]:
+        return [v.strip() for v in self.mattermost_channel_ids.split(",")]
 
 
 settings = Settings()  # noqa
