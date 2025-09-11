@@ -170,8 +170,12 @@ def process_mattermost_posts(db: Session) -> None:
                     f.write("\n".join(chunk_content))
                 logger.info(f"Generated file: {file_path}")
 
-                logger.info(f"Uploading {file_path.name} to Google Drive...")
-                upload_file_to_gdrive(gdrive_service, file_path, gdrive_folder_id)
+                logger.info(
+                    f"Uploading {file_path.name} to Google Drive as a Google Doc..."
+                )
+                upload_file_to_gdrive(
+                    gdrive_service, file_path, gdrive_folder_id, as_gdoc=True
+                )
 
             except IOError as e:
                 logger.error(f"Error writing to file {file_path}: {e}")

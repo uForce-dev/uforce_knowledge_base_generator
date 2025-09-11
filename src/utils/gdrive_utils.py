@@ -29,10 +29,23 @@ def get_gdrive_service():
     return None
 
 
-def upload_file_to_gdrive(service, file_path: Path, folder_id: str):
+def upload_file_to_gdrive(
+    service, file_path: Path, folder_id: str, as_gdoc: bool = False
+):
+    """Uploads a file to a specific folder in Google Drive, optionally as a Google Doc."""
     try:
-        file_metadata = {"name": file_path.name, "parents": [folder_id]}
-        media = MediaFileUpload(str(file_path), mimetype="text/plain")
+        if as_gdoc:
+            file_name = file_path.stem
+            file_metadata = {
+                "name": file_name,
+                "parents": [folder_id],
+                "mimeType": "application/vnd.google-apps.document",
+            }
+        else:
+            file_name = file_path.name
+            file_metadata = {"name": file_name, "parents": [folder_id]}
+
+        media = MediaFileUpload(str(file_path), mimetype="text/plain", resumable=True)
         file = (
             service.files()
             .create(
@@ -44,7 +57,7 @@ def upload_file_to_gdrive(service, file_path: Path, folder_id: str):
             .execute()
         )
         logger.info(
-            f"File '{file_path.name}' uploaded to Google Drive with ID: {file.get('id')}"
+            f"File '{file_name}' uploaded to Google Drive with ID: {file.get('id')}"
         )
     except HttpError as error:
         logger.error(f"An error occurred while uploading {file_path.name}: {error}")
@@ -76,7 +89,8 @@ def delete_files_in_folder(service, folder_id: str):
         for item in items:
             try:
                 service.files().delete(
-                    fileId=item["id"], supportsAllDrives=True,
+                    fileId=item["id"],
+                    supportsAllDrives=True,
                 ).execute()
                 logger.info(f"Deleted file: {item['name']} (ID: {item['id']})")
             except HttpError as error:
