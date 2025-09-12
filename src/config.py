@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     mattermost_channel_ids: str
     processing_chunk_days: int
     total_search_period_days: int
+    teamly_combine_files: bool
 
     db: DatabaseSettings = DatabaseSettings()  # noqa
 

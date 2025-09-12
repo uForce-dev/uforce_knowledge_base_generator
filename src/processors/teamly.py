@@ -133,6 +133,76 @@ def process_teamly_documents() -> None:
 
     logger.info(f"Found {len(docx_files)} .docx files to process.")
 
+    if settings.teamly_combine_files:
+        # Group by top-level folder under the source root
+        groups: dict[str, list[dict]] = {}
+        for file_info in docx_files:
+            path_parts = file_info["path"].split(os.path.sep)
+            top_level_folder = path_parts[0] if path_parts else "root"
+            groups.setdefault(top_level_folder, []).append(file_info)
+
+        if not groups:
+            logger.info("No groups detected in combine mode. Nothing to upload.")
+            return
+
+        for folder_name, files_in_group in groups.items():
+            combined_chunks: list[str] = []
+            for file_info in files_in_group:
+                logger.info(
+                    f"Processing file (combine mode: {folder_name}): {file_info['path']}"
+                )
+                file_stream = download_file(service, file_info["id"])
+                if not file_stream:
+                    logger.warning(
+                        f"Skipping file {file_info['path']} due to download error."
+                    )
+                    continue
+                raw_text = extract_text_from_docx(file_stream)
+                text_content = clean_text(raw_text)
+                if not text_content:
+                    logger.warning(
+                        f"Skipping file {file_info['path']} as no text could be extracted or was empty after cleaning."
+                    )
+                    continue
+                combined_chunks.append(f"# {file_info['path']}\n\n{text_content}\n\n")
+
+            if not combined_chunks:
+                logger.info(
+                    f"No content generated for group '{folder_name}'. Skipping upload."
+                )
+                continue
+
+            combined_metadata = (
+                "---\n"
+                "source: Teamly Google Drive\n"
+                f"category: {folder_name}\n"
+                "data_format: 'plain_text'\n"
+                "---\n\n"
+            )
+
+            safe_folder_name = re.sub(r"[^\w\-_. ]+", "_", folder_name)
+            combined_name = f"{safe_folder_name}.txt"
+            combined_path = settings.teamly_temp_dir / combined_name
+            try:
+                with open(combined_path, "w", encoding="utf-8") as f:
+                    f.write(combined_metadata)
+                    f.writelines(combined_chunks)
+                logger.info(
+                    f"Generated combined file for '{folder_name}': {combined_path}"
+                )
+
+                logger.info(
+                    f"Uploading {combined_path.stem} to Google Drive as a Google Doc..."
+                )
+                upload_file_to_gdrive(
+                    service, combined_path, processed_folder_id, as_gdoc=True
+                )
+            except IOError as e:
+                logger.error(
+                    f"Error writing combined file {combined_path} for '{folder_name}': {e}"
+                )
+        return
+
     for file_info in docx_files:
         logger.info(f"Processing file: {file_info['path']}")
 
