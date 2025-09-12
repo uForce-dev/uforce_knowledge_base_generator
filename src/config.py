@@ -44,10 +44,20 @@ class Settings(BaseSettings):
     logs_dir: Path = LOGS_DIR
     env_file: Path = ENV_FILE
 
+    # Google
     google_account_file_name: str
+
     google_drive_teamly_source_dir_id: str
     google_drive_teamly_processed_dir_id: str
+
     google_drive_mattermost_processed_dir_id: str
+
+    google_sheets_hr_spreadsheet_id: str
+    google_sheets_hr_sheet_name: str
+    google_sheets_hr_sheet_gid: int
+    google_sheets_hr_range: str
+    google_drive_hr_processed_dir_id: str
+
     mattermost_channel_ids: str
     processing_chunk_days: int
     total_search_period_days: int

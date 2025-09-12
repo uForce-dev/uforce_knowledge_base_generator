@@ -3,6 +3,7 @@ from pathlib import Path
 
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 
-def get_gdrive_service():
+def get_gdrive_service() -> Resource | None:
     try:
         creds = Credentials.from_service_account_file(
             settings.google_account_file, scopes=SCOPES
