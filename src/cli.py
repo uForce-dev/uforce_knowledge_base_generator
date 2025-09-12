@@ -49,10 +49,10 @@ def main() -> None:
             process_mattermost_posts(db_session)
             logger.info("Mattermost knowledge base generation finished.")
 
-        # if run_teamly:
-        #     logger.info("Starting Teamly knowledge base generation.")
-        #     process_teamly_documents()
-        #     logger.info("Teamly knowledge base generation finished.")
+        if run_teamly:
+            logger.info("Starting Teamly knowledge base generation.")
+            process_teamly_documents()
+            logger.info("Teamly knowledge base generation finished.")
 
     except Exception as e:
         logger.critical(f"An unhandled error occurred: {e}", exc_info=True)

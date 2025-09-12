@@ -74,7 +74,13 @@ def delete_files_in_folder(service, folder_id: str):
             service.files()
             .list(
                 q=query,
-                fields="files(id, name)",
+                fields=(
+                    "files("
+                    "id, name, mimeType, driveId, "
+                    "owners(displayName,emailAddress), "
+                    "capabilities(canTrash,canDelete)"
+                    ")"
+                ),
                 supportsAllDrives=True,
                 includeItemsFromAllDrives=True,
             )
@@ -87,16 +93,62 @@ def delete_files_in_folder(service, folder_id: str):
 
         logger.info(f"Found {len(items)} files to delete in folder ID: {folder_id}.")
         for item in items:
-            try:
-                service.files().delete(
-                    fileId=item["id"],
-                    supportsAllDrives=True,
-                ).execute()
-                logger.info(f"Deleted file: {item['name']} (ID: {item['id']})")
-            except HttpError as error:
-                logger.error(
-                    f"Failed to delete file {item['name']} (ID: {item['id']}): {error}"
+            file_id = item.get("id")
+            file_name = item.get("name")
+            capabilities = item.get("capabilities", {})
+            can_trash = capabilities.get("canTrash", False)
+            can_delete = capabilities.get("canDelete", False)
+
+            owners = item.get("owners", [])
+            owners_str = (
+                ", ".join(
+                    f"{o.get('displayName')}<{o.get('emailAddress')}>" for o in owners
                 )
+                or "unknown"
+            )
+
+            # Prefer moving to trash to avoid hard-delete permission issues
+            if can_trash:
+                try:
+                    service.files().update(
+                        fileId=file_id,
+                        body={"trashed": True},
+                        supportsAllDrives=True,
+                    ).execute()
+                    logger.info(
+                        f"Trashed file: {file_name} (ID: {file_id}) owned by {owners_str}"
+                    )
+                    continue
+                except HttpError as error:
+                    # Fall through to try hard delete if permitted
+                    logger.warning(
+                        f"Failed to trash file {file_name} (ID: {file_id}): {error}"
+                    )
+
+            if can_delete:
+                try:
+                    service.files().delete(
+                        fileId=file_id,
+                        supportsAllDrives=True,
+                    ).execute()
+                    logger.info(
+                        f"Permanently deleted file: {file_name} (ID: {file_id}) owned by {owners_str}"
+                    )
+                    continue
+                except HttpError as error:
+                    logger.error(
+                        f"Failed to hard-delete file {file_name} (ID: {file_id}): {error}"
+                    )
+                    continue
+
+            # If neither action is permitted, provide a clear diagnostic
+            logger.warning(
+                "Insufficient permissions to remove file %s (ID: %s). Owners: %s. "
+                "Required: canTrash or canDelete on this item or higher role on its drive (Content manager/Manager).",
+                file_name,
+                file_id,
+                owners_str,
+            )
     except HttpError as error:
         logger.error(
             f"An error occurred while listing files for deletion in folder {folder_id}: {error}"

@@ -170,8 +170,12 @@ def process_teamly_documents() -> None:
                 f.write(text_content)
             logger.info(f"Generated file: {output_file_path}")
 
-            logger.info(f"Uploading {output_file_path.name} to Google Drive...")
-            upload_file_to_gdrive(service, output_file_path, processed_folder_id)
+            logger.info(
+                f"Uploading {output_file_path.name} to Google Drive as a Google Doc..."
+            )
+            upload_file_to_gdrive(
+                service, output_file_path, processed_folder_id, as_gdoc=True
+            )
 
         except IOError as e:
             logger.error(f"Error writing to file {output_file_path}: {e}")
