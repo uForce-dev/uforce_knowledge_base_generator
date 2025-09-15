@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     processing_chunk_days: int
     total_search_period_days: int
     teamly_combine_files: bool
+    hr_split_files_count: int | None = None
 
     db: DatabaseSettings = DatabaseSettings()  # noqa
 
