@@ -14,6 +14,11 @@ from src.utils.gdrive_utils import (
     upload_file_to_gdrive,
     delete_files_in_folder,
 )
+from src.utils.datetime_utils import (
+    epoch_ms_to_moscow_dt,
+    format_dt_human_msk,
+    format_date_ymd_msk,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +47,9 @@ def process_mattermost_posts(db: Session) -> None:
 
     gdrive_service = get_gdrive_service()
     if not gdrive_service:
-        logger.error("Could not get Google Drive service. Aborting Mattermost processing.")
+        logger.error(
+            "Could not get Google Drive service. Aborting Mattermost processing."
+        )
         return
 
     gdrive_folder_id = settings.google_drive_mattermost_processed_dir_id
@@ -50,7 +57,9 @@ def process_mattermost_posts(db: Session) -> None:
         logger.error("Mattermost processed folder ID is not set in settings. Aborting.")
         return
 
-    logger.info(f"Clearing Google Drive folder ID: {gdrive_folder_id} for Mattermost files...")
+    logger.info(
+        f"Clearing Google Drive folder ID: {gdrive_folder_id} for Mattermost files..."
+    )
     delete_files_in_folder(gdrive_service, gdrive_folder_id)
 
     logger.info(f"Ensured temp directory exists: {settings.temp_dir}")
@@ -75,10 +84,10 @@ def process_mattermost_posts(db: Session) -> None:
         )
         return
 
-    start_date = datetime.datetime.fromtimestamp(start_ts / 1000)
-    end_date = datetime.datetime.fromtimestamp(max_ts / 1000)
+    start_date = epoch_ms_to_moscow_dt(start_ts)
+    end_date = epoch_ms_to_moscow_dt(max_ts)
     logger.info(
-        f"Processing posts from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+        f"Processing posts from {format_date_ymd_msk(start_date)} to {format_date_ymd_msk(end_date)}"
     )
 
     current_date = start_date
@@ -87,8 +96,12 @@ def process_mattermost_posts(db: Session) -> None:
         period_end_dt = period_start_dt + datetime.timedelta(
             days=settings.processing_chunk_days
         )
-        period_start_ts = int(period_start_dt.timestamp() * 1000)
-        period_end_ts = int(period_end_dt.timestamp() * 1000)
+        period_start_ts = int(
+            period_start_dt.astimezone(datetime.timezone.utc).timestamp() * 1000
+        )
+        period_end_ts = int(
+            period_end_dt.astimezone(datetime.timezone.utc).timestamp() * 1000
+        )
 
         logger.info(
             f"Processing period: {period_start_dt.strftime('%Y-%m-%d')} - {period_end_dt.strftime('%Y-%m-%d')}"
@@ -138,8 +151,11 @@ def process_mattermost_posts(db: Session) -> None:
                         cleaned_message = clean_text(post.Message)
                         username = user_map.get(post.UserId, f"user_{post.UserId}")
                         if cleaned_message:
+                            ts_msk = format_dt_human_msk(
+                                epoch_ms_to_moscow_dt(post.CreateAt)
+                            )
                             chunk_content.append(
-                                f"timestamp: {post.CreateAt}, user: {username}, message: {cleaned_message}"
+                                f"timestamp: {ts_msk}, user: {username}, message: {cleaned_message}"
                             )
 
                 processed_threads_ids.add(root_post.Id)
@@ -151,17 +167,16 @@ def process_mattermost_posts(db: Session) -> None:
                 continue
 
             metadata = (
-                f"---\n"
-                f"source: Mattermost\n"
-                f"category: Posts\n"
+                "---\n"
+                "category: Mattermost\n"
                 f"channel: {channel_name}\n"
-                f"date_range_start: {period_start_dt.strftime('%Y-%m-%d')}\n"
-                f"date_range_end: {period_end_dt.strftime('%Y-%m-%d')}\n"
-                f"data_format: 'timestamp: <unix_timestamp_ms>, user: <username>, message: <cleaned_message>'.\n"
-                f"---\n\n"
+                f"date_range_start: {format_date_ymd_msk(period_start_dt)}\n"
+                f"date_range_end: {format_date_ymd_msk(period_end_dt)}\n"
+                "body_format: one-record-per-line — 'timestamp: YYYY-MM-DD HH:MM MSK, user: <username>, message: <text>'\n"
+                "---\n\n"
             )
 
-            file_name = f"mattermost_posts_{channel_name}_{period_start_dt.strftime('%Y-%m-%d')}_to_{period_end_dt.strftime('%Y-%m-%d')}.txt"
+            file_name = f"mattermost_posts_{channel_name}_{format_date_ymd_msk(period_start_dt)}_to_{format_date_ymd_msk(period_end_dt)}.txt"
             file_path = settings.mattermost_temp_dir / file_name
 
             try:

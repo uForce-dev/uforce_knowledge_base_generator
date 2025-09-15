@@ -51,15 +51,15 @@ def main() -> None:
 
     db_session = next(get_db())
     try:
-        # if run_mattermost:
-        #     logger.info("Starting Mattermost knowledge base generation.")
-        #     process_mattermost_posts(db_session)
-        #     logger.info("Mattermost knowledge base generation finished.")
-        #
-        # if run_teamly:
-        #     logger.info("Starting Teamly knowledge base generation.")
-        #     process_teamly_documents()
-        #     logger.info("Teamly knowledge base generation finished.")
+        if run_mattermost:
+            logger.info("Starting Mattermost knowledge base generation.")
+            process_mattermost_posts(db_session)
+            logger.info("Mattermost knowledge base generation finished.")
+
+        if run_teamly:
+            logger.info("Starting Teamly knowledge base generation.")
+            process_teamly_documents()
+            logger.info("Teamly knowledge base generation finished.")
 
         if run_hr:
             logger.info("Starting HR sheet knowledge base generation.")

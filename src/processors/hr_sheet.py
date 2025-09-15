@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -35,14 +34,10 @@ def parse_hr_rows(values: List[List[str]]) -> List[Dict[str, Any]]:
 
 
 def extract_knowledge(entries: List[Dict[str, Any]]) -> str:
-    # Expected key names from provided sample (normalized to lowercase)
-    # We'll fetch a subset crucial for hiring, probation, transitions, terminations
     lines: List[str] = []
     lines.append("---")
-    lines.append("source: HR Google Sheet")
-    lines.append("category: People Lifecycle")
-    lines.append("data_format: 'structured_bulleted_text'")
-    lines.append("generated_at: " + datetime.utcnow().isoformat())
+    lines.append("category: HR lifecycle")
+    lines.append("body_format: one-record-per-block")
     lines.append("---\n")
 
     for e in entries:
@@ -74,37 +69,35 @@ def extract_knowledge(entries: List[Dict[str, Any]]) -> str:
         if not name:
             continue
 
-        lines.append(f"- Person: {name}")
+        parts: List[str] = [f"person: {name}"]
         if current_position:
-            lines.append(f"  - Current position: {current_position}")
+            parts.append(f"current_position: {current_position}")
         if direction:
-            lines.append(f"  - Direction: {direction}")
+            parts.append(f"direction: {direction}")
         if teamlead:
-            lines.append(f"  - Team lead: {teamlead}")
+            parts.append(f"team_lead: {teamlead}")
         if start_date:
-            lines.append(f"  - Start date: {start_date}")
+            parts.append(f"start_date: {start_date}")
         if probation_end:
-            lines.append(
-                f"  - Probation end: {probation_end} (passed: {probation_passed or 'unknown'})"
+            parts.append(
+                f"probation_end: {probation_end} (passed: {probation_passed or 'unknown'})"
             )
 
-        # Career transitions
         promoted = [(lvl, dt) for lvl, dt in transition_dates if dt]
         if promoted:
-            lines.append("  - Promotions:")
-            for lvl, dt in promoted:
-                lines.append(f"    - {lvl}: {dt}")
+            promo_str = ", ".join(f"{lvl}:{dt}" for lvl, dt in promoted)
+            parts.append(f"promotions: {promo_str}")
         if core_date:
-            lines.append(f"  - Moved to Core: {core_date}")
-
-        # Termination
+            parts.append(f"moved_to_core: {core_date}")
         if termination_status:
-            lines.append("  - Termination:")
+            term_parts = []
             if termination_date:
-                lines.append(f"    - date: {termination_date}")
+                term_parts.append(f"date:{termination_date}")
             if termination_reason:
-                lines.append(f"    - reason: {termination_reason}")
-        lines.append("")
+                term_parts.append(f"reason:{termination_reason}")
+            if term_parts:
+                parts.append("termination: " + ", ".join(term_parts))
+        lines.append("; ".join(parts))
 
     return "\n".join(lines)
 

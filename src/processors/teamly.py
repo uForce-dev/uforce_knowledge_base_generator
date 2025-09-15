@@ -40,7 +40,7 @@ def clean_text(text: str) -> str:
         "\u23cf"
         "\u23e9"
         "\u231a"
-        "\ufe0f"  # dingbats
+        "\ufe0f"
         "\u3030"
         "]+",
         flags=re.UNICODE,
@@ -103,7 +103,10 @@ def download_file(service, file_id: str) -> io.BytesIO | None:
 def extract_text_from_docx(file_stream: io.BytesIO) -> str:
     try:
         document = docx.Document(file_stream)
-        return "\n".join(para.text for para in document.paragraphs if para.text)
+        lines: list[str] = []
+        for para in document.paragraphs:
+            lines.append(para.text)
+        return "\n".join(lines)
     except Exception as e:
         logger.error(f"Error extracting text from docx stream: {e}")
     return ""
@@ -158,13 +161,17 @@ def process_teamly_documents() -> None:
                     )
                     continue
                 raw_text = extract_text_from_docx(file_stream)
-                text_content = clean_text(raw_text)
+                # Clean without collapsing newlines: clean only emojis and excessive spaces within lines
+                # Keep original newlines to preserve document structure
+                cleaned = clean_text(raw_text)
+                # Re-expand single spaces where multiple spaces were collapsed inside clean_text by splitting per line
+                text_content = "\n".join(part.strip() for part in cleaned.split("\n"))
                 if not text_content:
                     logger.warning(
                         f"Skipping file {file_info['path']} as no text could be extracted or was empty after cleaning."
                     )
                     continue
-                combined_chunks.append(f"# {file_info['path']}\n\n{text_content}\n\n")
+                combined_chunks.append((file_info["path"], text_content))
 
             if not combined_chunks:
                 logger.info(
@@ -174,9 +181,9 @@ def process_teamly_documents() -> None:
 
             combined_metadata = (
                 "---\n"
-                "source: Teamly Google Drive\n"
-                f"category: {folder_name}\n"
-                "data_format: 'plain_text'\n"
+                "category: Teamly\n"
+                f"folder: {folder_name}\n"
+                "body_format: documents concatenated; each begins with '# <path>' line, followed by original paragraphs with newlines preserved\n"
                 "---\n\n"
             )
 
@@ -186,7 +193,9 @@ def process_teamly_documents() -> None:
             try:
                 with open(combined_path, "w", encoding="utf-8") as f:
                     f.write(combined_metadata)
-                    f.writelines(combined_chunks)
+                    for path_str, content_str in combined_chunks:
+                        f.write(f"# {path_str}\n")
+                        f.write(content_str.rstrip("\n") + "\n\n")
                 logger.info(
                     f"Generated combined file for '{folder_name}': {combined_path}"
                 )
@@ -212,7 +221,8 @@ def process_teamly_documents() -> None:
             continue
 
         raw_text = extract_text_from_docx(file_stream)
-        text_content = clean_text(raw_text)
+        cleaned = clean_text(raw_text)
+        text_content = "\n".join(part.strip() for part in cleaned.split("\n"))
 
         if not text_content:
             logger.warning(
@@ -227,11 +237,14 @@ def process_teamly_documents() -> None:
         output_file_path = settings.teamly_temp_dir / flat_file_name
 
         metadata = (
-            f"---\n"
-            f"source: Teamly Google Drive\n"
-            f"category: {relative_path.parent}\n"
-            f"data_format: 'plain_text'\n"
-            f"---\n\n"
+            "---\n"
+            "category: Teamly\n"
+            f"folder_path: {relative_path.parent}\n"
+            "schema:\n"
+            "  type: document\n"
+            "  content: plain_text\n"
+            "body_format: free-form paragraphs with newlines preserved\n"
+            "---\n\n"
         )
 
         try:
