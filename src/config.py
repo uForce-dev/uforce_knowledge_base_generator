@@ -55,7 +55,6 @@ class Settings(BaseSettings):
     google_sheets_hr_range: str
     google_drive_hr_processed_dir_id: str
 
-    mattermost_channel_ids: str
     processing_chunk_days: int
     total_search_period_days: int
     teamly_combine_files: bool
@@ -65,8 +64,6 @@ class Settings(BaseSettings):
     teamly_api_refresh_token: str
     teamly_api_client_id: str
     teamly_api_client_secret: str
-    teamly_excluded_article_ids: str
-    hr_split_files_count: int | None = None
 
     db: DatabaseSettings = DatabaseSettings()  # noqa
 
@@ -75,14 +72,6 @@ class Settings(BaseSettings):
     @computed_field
     def google_account_file(self) -> Path:
         return self.secrets_dir / self.google_account_file_name
-
-    @computed_field
-    def mattermost_channel_ids_list(self) -> list[str]:
-        return [v.strip() for v in self.mattermost_channel_ids.split(",")]
-
-    @computed_field
-    def teamly_excluded_article_ids_list(self) -> list[str]:
-        return [v.strip() for v in self.teamly_excluded_article_ids.split(",")]
 
 
 settings = Settings()  # noqa

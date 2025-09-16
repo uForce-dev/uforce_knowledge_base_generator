@@ -11,6 +11,7 @@ import requests
 from docx import Document
 
 from src.config import settings
+from src.constants import TEAMLY_EXCLUDED_ARTICLE_IDS
 from src.logging_config import setup_logging
 from src.processors.base import BaseProcessor
 from src.schemas import TeamlyArticle
@@ -65,14 +66,14 @@ class TeamlyProcessor(BaseProcessor):
     TEAMLY_SLUG = settings.teamly_api_slug
 
     def __init__(
-            self, logger: logging.Logger | None = None, use_cached_local_files: bool = False
+        self, logger: logging.Logger | None = None, use_cached_local_files: bool = False
     ) -> None:
         super().__init__(logger)
         self._access_token = settings.teamly_api_access_token
         self._refresh_token = settings.teamly_api_refresh_token
         self._client_id = settings.teamly_api_client_id
         self._client_secret = settings.teamly_api_client_secret
-        self._excluded_article_ids = settings.teamly_excluded_article_ids_list
+        self._excluded_article_ids = TEAMLY_EXCLUDED_ARTICLE_IDS
         self._use_cached_local_files = use_cached_local_files
 
         self.authorize_endpoint = (
@@ -116,7 +117,7 @@ class TeamlyProcessor(BaseProcessor):
 
     def _update_tokens_from_response(self, data: dict[str, Any]) -> bool:
         access = (
-                data.get("access_token") or data.get("accessToken") or data.get("token")
+            data.get("access_token") or data.get("accessToken") or data.get("token")
         )
         refresh = data.get("refresh_token") or data.get("refreshToken")
         if not access:
@@ -182,7 +183,7 @@ class TeamlyProcessor(BaseProcessor):
         return response
 
     def list_articles_page(
-            self, page: int = 1
+        self, page: int = 1
     ) -> tuple[list[TeamlyArticle], dict[str, Any]]:
         time.sleep(0.2)
         self.logger.info(
@@ -456,7 +457,7 @@ class TeamlyProcessor(BaseProcessor):
                 # Body without metadata and first heading
                 body = text
                 if text.startswith("---\n") and end != -1:
-                    body = text[end + len("\n---\n"):]
+                    body = text[end + len("\n---\n") :]
                 lines = body.splitlines()
                 if lines and lines[0].startswith("# "):
                     body = "\n".join(lines[1:])

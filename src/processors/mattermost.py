@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
 from src.config import settings
+from src.constants import MATTERMOST_CHANNEL_IDS
 from src.database import get_db
 from src.logging_config import setup_logging
 from src.models import Post
@@ -79,7 +80,7 @@ class MattermostProcessor(BaseProcessor):
 
         self.logger.info(f"Ensured temp directory exists: {settings.temp_dir}")
 
-        channel_ids_to_process = settings.mattermost_channel_ids_list
+        channel_ids_to_process = MATTERMOST_CHANNEL_IDS
         if not channel_ids_to_process:
             self.logger.warning(
                 "No Mattermost channel IDs specified in settings. Skipping post processing."

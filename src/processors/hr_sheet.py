@@ -1,9 +1,11 @@
 import logging
 import re
+import math
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
 from src.config import settings
+from src.constants import HR_SPLIT_FILES_COUNT
 from src.logging_config import setup_logging
 from src.processors.base import BaseProcessor
 from src.utils.gdrive_utils import (
@@ -45,18 +47,18 @@ def extract_kv_lines(entries: List[Dict[str, Any]]) -> List[Tuple[str, Optional[
         direction = e.get("направление", "").strip()
         teamlead = e.get("тимлид", "").strip()
         current_position = (
-                e.get("текущая позиция", "").strip() or e.get("позиция", "").strip()
+            e.get("текущая позиция", "").strip() or e.get("позиция", "").strip()
         )
         start_date = (
-                             e.get("дата начала работы", "").strip() or e.get("начало ис", "").strip()
-                     ) or None
+            e.get("дата начала работы", "").strip() or e.get("начало ис", "").strip()
+        ) or None
         probation_end = e.get("конец ис", "").strip()
         probation_passed = e.get("ис пройден", "").strip()
         termination_status = e.get("увольнение", "").strip()
         termination_reason = e.get("причина увольнения", "").strip()
         termination_date = (
-                                   e.get("дата", "").strip() or e.get("дата расторжения договора", "").strip()
-                           ) or None
+            e.get("дата", "").strip() or e.get("дата расторжения договора", "").strip()
+        ) or None
 
         parts: List[str] = [f"person: {name}"]
         if current_position:
@@ -95,8 +97,8 @@ class HRSheetProcessor(BaseProcessor):
 
     def run(self) -> None:
         if (
-                not settings.google_sheets_hr_spreadsheet_id
-                or not settings.google_drive_hr_processed_dir_id
+            not settings.google_sheets_hr_spreadsheet_id
+            or not settings.google_drive_hr_processed_dir_id
         ):
             logger.warning(
                 "HR sheet settings are not configured; skipping HR processor."
@@ -160,7 +162,7 @@ class HRSheetProcessor(BaseProcessor):
         ]
         dated_items.sort(key=lambda x: (x[1] or "9999-12-31", x[0]))
 
-        split_count = settings.hr_split_files_count or 1
+        split_count = HR_SPLIT_FILES_COUNT
         if split_count < 1:
             split_count = 1
 
@@ -172,9 +174,9 @@ class HRSheetProcessor(BaseProcessor):
             if n == 0:
                 chunks = []
             else:
-                per = max(1, n // split_count)
+                per = max(1, math.ceil(n / split_count))
                 for i in range(0, n, per):
-                    chunks.append(dated_items[i: i + per])
+                    chunks.append(dated_items[i : i + per])
 
         if not chunks:
             logger.info("No HR entries to write.")
