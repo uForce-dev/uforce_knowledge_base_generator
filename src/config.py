@@ -55,9 +55,6 @@ class Settings(BaseSettings):
     google_sheets_hr_range: str
     google_drive_hr_processed_dir_id: str
 
-    processing_chunk_days: int
-    total_search_period_days: int
-    teamly_combine_files: bool
     teamly_space_id: str
     teamly_api_slug: str
     teamly_api_access_token: str

@@ -21,3 +21,9 @@ MATTERMOST_CHANNEL_IDS = [
 ]
 
 HR_SPLIT_FILES_COUNT = 10
+
+# The total period in days for which messages are retrieved.
+TOTAL_SEARCH_PERIOD_DAYS = 90
+# The size of the data "chunk" for processing at one time, in days.
+PROCESSING_CHUNK_DAYS = 90
+TEAMLY_COMBINE_FILES = True

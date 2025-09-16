@@ -7,7 +7,11 @@ from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
 from src.config import settings
-from src.constants import MATTERMOST_CHANNEL_IDS
+from src.constants import (
+    MATTERMOST_CHANNEL_IDS,
+    TOTAL_SEARCH_PERIOD_DAYS,
+    PROCESSING_CHUNK_DAYS,
+)
 from src.database import get_db
 from src.logging_config import setup_logging
 from src.models import Post
@@ -91,12 +95,10 @@ class MattermostProcessor(BaseProcessor):
         channel_map = {channel.Id: channel.Name for channel in channels}
         self.logger.info(f"Processing posts for channels: {list(channel_map.values())}")
 
-        start_ts, max_ts = repo.get_posts_date_range(
-            days_ago=settings.total_search_period_days
-        )
+        start_ts, max_ts = repo.get_posts_date_range(days_ago=TOTAL_SEARCH_PERIOD_DAYS)
         if not start_ts or not max_ts:
             self.logger.info(
-                f"No posts found in the last {settings.total_search_period_days} days."
+                f"No posts found in the last {TOTAL_SEARCH_PERIOD_DAYS} days."
             )
             return
 
@@ -110,7 +112,7 @@ class MattermostProcessor(BaseProcessor):
         while current_date <= end_date:
             period_start_dt = current_date
             period_end_dt = period_start_dt + datetime.timedelta(
-                days=settings.processing_chunk_days
+                days=PROCESSING_CHUNK_DAYS
             )
             period_start_ts = int(
                 period_start_dt.astimezone(datetime.timezone.utc).timestamp() * 1000
@@ -215,7 +217,7 @@ class MattermostProcessor(BaseProcessor):
                 except IOError as e:
                     self.logger.error(f"Error writing to file {file_path}: {e}")
 
-            current_date += datetime.timedelta(days=settings.processing_chunk_days)
+            current_date += datetime.timedelta(days=PROCESSING_CHUNK_DAYS)
 
 
 if __name__ == "__main__":
