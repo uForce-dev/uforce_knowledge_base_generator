@@ -46,12 +46,9 @@ class Settings(BaseSettings):
 
     # Google
     google_account_file_name: str
-
     google_drive_teamly_source_dir_id: str
     google_drive_teamly_processed_dir_id: str
-
     google_drive_mattermost_processed_dir_id: str
-
     google_sheets_hr_spreadsheet_id: str
     google_sheets_hr_sheet_name: str
     google_sheets_hr_sheet_gid: int
@@ -62,6 +59,13 @@ class Settings(BaseSettings):
     processing_chunk_days: int
     total_search_period_days: int
     teamly_combine_files: bool
+    teamly_space_id: str
+    teamly_api_slug: str
+    teamly_api_access_token: str
+    teamly_api_refresh_token: str
+    teamly_api_client_id: str
+    teamly_api_client_secret: str
+    teamly_excluded_article_ids: str
     hr_split_files_count: int | None = None
 
     db: DatabaseSettings = DatabaseSettings()  # noqa
@@ -75,6 +79,10 @@ class Settings(BaseSettings):
     @computed_field
     def mattermost_channel_ids_list(self) -> list[str]:
         return [v.strip() for v in self.mattermost_channel_ids.split(",")]
+
+    @computed_field
+    def teamly_excluded_article_ids_list(self) -> list[str]:
+        return [v.strip() for v in self.teamly_excluded_article_ids.split(",")]
 
 
 settings = Settings()  # noqa
