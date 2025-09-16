@@ -12,4 +12,3 @@ class TeamlyArticle(BaseModel):
     created_by: str | None = Field(default=None, alias="createdBy")
 
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
-

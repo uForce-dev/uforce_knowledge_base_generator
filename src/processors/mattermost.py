@@ -7,19 +7,21 @@ from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
 from src.config import settings
+from src.database import get_db
+from src.logging_config import setup_logging
 from src.models import Post
+from src.processors.base import BaseProcessor
 from src.repository import PostRepository
-from src.utils.gdrive_utils import (
-    get_gdrive_service,
-    upload_file_to_gdrive,
-    delete_files_in_folder,
-)
 from src.utils.datetime_utils import (
     epoch_ms_to_moscow_dt,
     format_dt_human_msk,
     format_date_ymd_msk,
 )
-from src.processors.base import BaseProcessor
+from src.utils.gdrive_utils import (
+    get_gdrive_service,
+    upload_file_to_gdrive,
+    delete_files_in_folder,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,7 @@ def clean_text(text: str) -> str:
 
 def process_mattermost_posts(db: Session) -> None:
     """Entrypoint wrapper for class-based Mattermost processing."""
+    setup_logging()
     processor = MattermostProcessor(db, logger=logging.getLogger(__name__))
     processor.run()
 
@@ -212,3 +215,7 @@ class MattermostProcessor(BaseProcessor):
                     self.logger.error(f"Error writing to file {file_path}: {e}")
 
             current_date += datetime.timedelta(days=settings.processing_chunk_days)
+
+
+if __name__ == "__main__":
+    process_mattermost_posts(next(get_db()))

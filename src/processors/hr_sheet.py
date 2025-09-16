@@ -4,13 +4,14 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
 from src.config import settings
+from src.logging_config import setup_logging
 from src.processors.base import BaseProcessor
-from src.utils.gsheets_utils import get_gsheets_service, read_sheet_values
 from src.utils.gdrive_utils import (
     get_gdrive_service,
     upload_file_to_gdrive,
     delete_files_in_folder,
 )
+from src.utils.gsheets_utils import get_gsheets_service, read_sheet_values
 
 logger = logging.getLogger(__name__)
 
@@ -44,18 +45,18 @@ def extract_kv_lines(entries: List[Dict[str, Any]]) -> List[Tuple[str, Optional[
         direction = e.get("направление", "").strip()
         teamlead = e.get("тимлид", "").strip()
         current_position = (
-            e.get("текущая позиция", "").strip() or e.get("позиция", "").strip()
+                e.get("текущая позиция", "").strip() or e.get("позиция", "").strip()
         )
         start_date = (
-            e.get("дата начала работы", "").strip() or e.get("начало ис", "").strip()
-        ) or None
+                             e.get("дата начала работы", "").strip() or e.get("начало ис", "").strip()
+                     ) or None
         probation_end = e.get("конец ис", "").strip()
         probation_passed = e.get("ис пройден", "").strip()
         termination_status = e.get("увольнение", "").strip()
         termination_reason = e.get("причина увольнения", "").strip()
         termination_date = (
-            e.get("дата", "").strip() or e.get("дата расторжения договора", "").strip()
-        ) or None
+                                   e.get("дата", "").strip() or e.get("дата расторжения договора", "").strip()
+                           ) or None
 
         parts: List[str] = [f"person: {name}"]
         if current_position:
@@ -84,6 +85,7 @@ def extract_kv_lines(entries: List[Dict[str, Any]]) -> List[Tuple[str, Optional[
 
 def process_hr_sheet() -> None:
     """Entrypoint wrapper for class-based HR processing."""
+    setup_logging()
     processor = HRSheetProcessor(logger=logging.getLogger(__name__))
     processor.run()
 
@@ -93,8 +95,8 @@ class HRSheetProcessor(BaseProcessor):
 
     def run(self) -> None:
         if (
-            not settings.google_sheets_hr_spreadsheet_id
-            or not settings.google_drive_hr_processed_dir_id
+                not settings.google_sheets_hr_spreadsheet_id
+                or not settings.google_drive_hr_processed_dir_id
         ):
             logger.warning(
                 "HR sheet settings are not configured; skipping HR processor."
@@ -172,7 +174,7 @@ class HRSheetProcessor(BaseProcessor):
             else:
                 per = max(1, n // split_count)
                 for i in range(0, n, per):
-                    chunks.append(dated_items[i : i + per])
+                    chunks.append(dated_items[i: i + per])
 
         if not chunks:
             logger.info("No HR entries to write.")
@@ -221,3 +223,7 @@ class HRSheetProcessor(BaseProcessor):
                 )
             except OSError as e:
                 logger.error(f"Error writing HR knowledge file {output_path}: {e}")
+
+
+if __name__ == "__main__":
+    process_hr_sheet()

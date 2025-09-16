@@ -6,6 +6,7 @@ from googleapiclient.discovery import build
 from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
+import time
 
 from src.config import settings
 
@@ -30,42 +31,101 @@ def get_gdrive_service() -> Resource | None:
     return None
 
 
+def _detect_mimetype(file_path: Path) -> str:
+    suffix = file_path.suffix.lower()
+    if suffix == ".docx":
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    if suffix in {".txt", ".md"}:
+        return "text/plain"
+    if suffix == ".html":
+        return "text/html"
+    return "application/octet-stream"
+
+
 def upload_file_to_gdrive(
     service, file_path: Path, folder_id: str, as_gdoc: bool = False
 ):
-    """Uploads a file to a specific folder in Google Drive, optionally as a Google Doc."""
-    try:
-        if as_gdoc:
-            file_name = file_path.stem
-            file_metadata = {
-                "name": file_name,
-                "parents": [folder_id],
-                "mimeType": "application/vnd.google-apps.document",
-            }
-        else:
-            file_name = file_path.name
-            file_metadata = {"name": file_name, "parents": [folder_id]}
+    """Uploads a file to a specific folder in Google Drive, optionally as a Google Doc.
 
-        media = MediaFileUpload(str(file_path), mimetype="text/plain", resumable=True)
-        file = (
-            service.files()
-            .create(
-                body=file_metadata,
-                media_body=media,
-                fields="id",
-                supportsAllDrives=True,
+    - When as_gdoc is True, file is imported as Google Doc by setting target mimeType
+      to application/vnd.google-apps.document while media mimetype reflects the source.
+    - Includes simple retries for transient 5xx errors.
+    """
+    file_name_display = file_path.stem if as_gdoc else file_path.name
+    if as_gdoc:
+        file_metadata = {
+            "name": file_path.stem,
+            "parents": [folder_id],
+            "mimeType": "application/vnd.google-apps.document",
+        }
+    else:
+        file_metadata = {"name": file_path.name, "parents": [folder_id]}
+
+    media_mime = _detect_mimetype(file_path)
+    media = MediaFileUpload(str(file_path), mimetype=media_mime, resumable=True)
+
+    max_attempts = 3
+    delay = 2.0
+    attempt = 1
+    tried_binary_fallback = False
+    while True:
+        try:
+            file = (
+                service.files()
+                .create(
+                    body=file_metadata,
+                    media_body=media,
+                    fields="id",
+                    supportsAllDrives=True,
+                )
+                .execute()
             )
-            .execute()
-        )
-        logger.info(
-            f"File '{file_name}' uploaded to Google Drive with ID: {file.get('id')}"
-        )
-    except HttpError as error:
-        logger.error(f"An error occurred while uploading {file_path.name}: {error}")
-    except Exception as e:
-        logger.error(
-            f"An unexpected error occurred during upload of {file_path.name}: {e}"
-        )
+            logger.info(
+                "File '%s' uploaded to Google Drive with ID: %s",
+                file_name_display,
+                file.get("id"),
+            )
+            return
+        except HttpError as error:
+            status = getattr(error, "status_code", None) or getattr(
+                error.resp, "status", None
+            )
+            # If import (as Google Doc) is too large, fall back to uploading as a regular file
+            if status and int(status) == 413 and as_gdoc and not tried_binary_fallback:
+                logger.warning(
+                    "Drive import too large for %s. Falling back to binary upload without conversion.",
+                    file_path.name,
+                )
+                as_gdoc = False
+                file_metadata = {"name": file_path.name, "parents": [folder_id]}
+                file_name_display = file_path.name
+                tried_binary_fallback = True
+                # retry immediately without backoff
+                continue
+            if status and 500 <= int(status) < 600 and attempt < max_attempts:
+                logger.warning(
+                    "Transient Drive error (%s) uploading %s. Retrying in %.1fs (attempt %d/%d)",
+                    status,
+                    file_path.name,
+                    delay,
+                    attempt,
+                    max_attempts,
+                )
+                time.sleep(delay)
+                attempt += 1
+                delay *= 2
+                continue
+            logger.error(
+                "An error occurred while uploading %s: %s", file_path.name, error
+            )
+            return
+        except Exception as e:
+            logger.error(
+                "An unexpected error occurred during upload of %s: %s",
+                file_path.name,
+                e,
+            )
+            return
 
 
 def delete_files_in_folder(service, folder_id: str):
