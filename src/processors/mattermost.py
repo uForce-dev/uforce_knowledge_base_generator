@@ -175,7 +175,7 @@ class MattermostProcessor(BaseProcessor):
                                     epoch_ms_to_moscow_dt(post.CreateAt)
                                 )
                                 chunk_content.append(
-                                    f"timestamp: {ts_msk}, user: {username}, message: {cleaned_message}"
+                                    f"datetime: {ts_msk}, user: {username}, message: {cleaned_message}"
                                 )
 
                     processed_threads_ids.add(root_post.Id)

@@ -400,6 +400,32 @@ class TeamlyProcessor(BaseProcessor):
                 return str(src)
         return None
 
+    def _ancestor_ids_from_details(self, data: dict[str, Any]) -> list[str]:
+        """Return all ancestor IDs from details payload (based on breadcrumbs and relatedParentId)."""
+        ancestors: list[str] = []
+        breadcrumbs = (data or {}).get("breadcrumbs") or []
+        if isinstance(breadcrumbs, list):
+            for node in breadcrumbs:
+                if isinstance(node, dict):
+                    src = node.get("sourceId")
+                    if src:
+                        ancestors.append(str(src))
+        parent = (data or {}).get("relatedParentId")
+        if parent:
+            pid = str(parent)
+            if pid not in ancestors:
+                ancestors.append(pid)
+        return ancestors
+
+    def _is_excluded_or_descendant(self, article_id: str, data: dict[str, Any]) -> bool:
+        excluded = set(self._excluded_article_ids)
+        if article_id in excluded:
+            return True
+        for anc_id in self._ancestor_ids_from_details(data):
+            if anc_id in excluded:
+                return True
+        return False
+
     def run(self) -> None:
         self.logger.info("Starting Teamly API processing...")
         if not getattr(self, "_tokens_ready", False):
@@ -455,6 +481,16 @@ class TeamlyProcessor(BaseProcessor):
                 data = self.get_article_details(art.id)
                 if not data:
                     continue
+                # Skip any article that is excluded explicitly or is a descendant of an excluded node
+                try:
+                    if self._is_excluded_or_descendant(art.id, data):
+                        self.logger.info(
+                            f"Skipping id={art.id} because it or one of its ancestors is excluded"
+                        )
+                        continue
+                except Exception:
+                    # Fail-open: if we cannot determine ancestry, proceed
+                    pass
                 details_cache[art.id] = data
                 second_id = self._second_level_id_from_details(data)
                 if second_id:
