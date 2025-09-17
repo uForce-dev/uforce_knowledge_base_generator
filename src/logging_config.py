@@ -5,6 +5,7 @@ from src.config import settings
 
 def setup_logging() -> None:
     """Configures the logging for the application."""
+    settings.logs_dir.mkdir(parents=True, exist_ok=True)
     log_file = settings.logs_dir / "app.log"
 
     # Create a logger
