@@ -69,8 +69,28 @@ class TeamlyProcessor(BaseProcessor):
         self, logger: logging.Logger | None = None, use_cached_local_files: bool = False
     ) -> None:
         super().__init__(logger)
-        self._access_token = settings.teamly_api_access_token
-        self._refresh_token = settings.teamly_api_refresh_token
+        # Token storage paths in secrets dir
+        self._access_token_path: Path = settings.secrets_dir / "teamly_access_token.txt"
+        self._refresh_token_path: Path = (
+            settings.secrets_dir / "teamly_refresh_token.txt"
+        )
+
+        # Read tokens strictly from files; do not rely on .env values
+        access_from_file = self._read_token_from_file(self._access_token_path)
+        refresh_from_file = self._read_token_from_file(self._refresh_token_path)
+        self._access_token = access_from_file
+        self._refresh_token = refresh_from_file
+        if not self._access_token or not self._refresh_token:
+            self.logger.error(
+                "Teamly tokens are missing. Please create and fill the following files:"
+            )
+            self.logger.error(
+                f"  Access token file: {self._access_token_path} (put the raw access token string)"
+            )
+            self.logger.error(
+                f"  Refresh token file: {self._refresh_token_path} (put the raw refresh token string)"
+            )
+        self._tokens_ready = bool(self._access_token and self._refresh_token)
         self._client_id = settings.teamly_api_client_id
         self._client_secret = settings.teamly_api_client_secret
         self._excluded_article_ids = TEAMLY_EXCLUDED_ARTICLE_IDS
@@ -115,6 +135,22 @@ class TeamlyProcessor(BaseProcessor):
         except Exception as exc:
             self.logger.warning(f"Failed to persist {key} to .env: {exc}")
 
+    def _read_token_from_file(self, path: Path) -> str | None:
+        try:
+            if path.exists():
+                value = path.read_text(encoding="utf-8").strip()
+                return value or None
+        except Exception as exc:
+            self.logger.warning(f"Failed reading token file {path}: {exc}")
+        return None
+
+    def _write_token_to_file(self, path: Path, value: str) -> None:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(value.strip(), encoding="utf-8")
+        except Exception as exc:
+            self.logger.warning(f"Failed writing token file {path}: {exc}")
+
     def _update_tokens_from_response(self, data: dict[str, Any]) -> bool:
         access = (
             data.get("access_token") or data.get("accessToken") or data.get("token")
@@ -126,6 +162,11 @@ class TeamlyProcessor(BaseProcessor):
         self._access_token = access
         if refresh:
             self._refresh_token = refresh
+
+        # Persist to token files (preferred source)
+        self._write_token_to_file(self._access_token_path, self._access_token)
+        if refresh:
+            self._write_token_to_file(self._refresh_token_path, self._refresh_token)
 
         self._persist_env_value("TEAMLY_API_ACCESS_TOKEN", self._access_token)
         if refresh:
@@ -361,6 +402,11 @@ class TeamlyProcessor(BaseProcessor):
 
     def run(self) -> None:
         self.logger.info("Starting Teamly API processing...")
+        if not getattr(self, "_tokens_ready", False):
+            self.logger.error(
+                "Aborting Teamly processing: token files are missing or empty. See errors above for instructions."
+            )
+            return
         service = get_gdrive_service()
         if not service:
             self.logger.error("Could not get Google Drive service. Aborting.")

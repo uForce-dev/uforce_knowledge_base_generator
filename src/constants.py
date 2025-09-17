@@ -15,7 +15,6 @@ MATTERMOST_CHANNEL_IDS = [
     "qc6u9f65ytygdxebrfs6ff9znc",  # project-crm
     "8ooexd4ajt8db8u7xyf6c4xdec",  # project-telemessaging
     "d9mygh6boproxp3ynzeff3digw",  # team-performance
-    "9qhou73ubpba5rze3ycfg43asw",  # tg-messages-denis-smetnev
     "doxebjbssbre3r1yyze5ntzhrr",  # sales
     "c73q3ike5ffzxmgaey6qmqu7zo",  # sales-inbound-leads
 ]

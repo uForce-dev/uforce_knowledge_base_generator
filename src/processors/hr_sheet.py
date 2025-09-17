@@ -182,6 +182,8 @@ class HRSheetProcessor(BaseProcessor):
             logger.info("No HR entries to write.")
             return
 
+        (settings.hr_temp_dir).mkdir(parents=True, exist_ok=True)
+
         for idx, chunk in enumerate(chunks, start=1):
             if not chunk:
                 continue
@@ -207,7 +209,7 @@ class HRSheetProcessor(BaseProcessor):
                 if len(chunks) > 1
                 else "hr_people_knowledge.txt"
             )
-            output_path: Path = settings.temp_dir / file_name
+            output_path: Path = settings.hr_temp_dir / file_name
             try:
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(metadata)

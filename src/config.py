@@ -7,6 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 TEMP_DIR = BASE_DIR / "temp"
 MATTERMOST_TEMP_DIR = TEMP_DIR / "mattermost"
 TEAMLY_TEMP_DIR = TEMP_DIR / "teamly"
+HR_TEMP_DIR = TEMP_DIR / "hr"
 SECRETS_DIR = BASE_DIR / "secrets"
 LOGS_DIR = BASE_DIR / "logs"
 ENV_FILE = BASE_DIR / ".env"
@@ -41,6 +42,7 @@ class Settings(BaseSettings):
     temp_dir: Path = TEMP_DIR
     mattermost_temp_dir: Path = MATTERMOST_TEMP_DIR
     teamly_temp_dir: Path = TEAMLY_TEMP_DIR
+    hr_temp_dir: Path = HR_TEMP_DIR
     logs_dir: Path = LOGS_DIR
     env_file: Path = ENV_FILE
 
@@ -57,8 +59,6 @@ class Settings(BaseSettings):
 
     teamly_space_id: str
     teamly_api_slug: str
-    teamly_api_access_token: str
-    teamly_api_refresh_token: str
     teamly_api_client_id: str
     teamly_api_client_secret: str
 
