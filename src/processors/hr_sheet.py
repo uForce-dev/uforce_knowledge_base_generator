@@ -64,7 +64,7 @@ def extract_kv_lines(entries: List[Dict[str, Any]]) -> List[Tuple[str, Optional[
         if current_position:
             parts.append(f"current_position: {current_position}")
         if direction:
-            parts.append(f"direction: {direction}")
+            parts.append(f"department: {direction}")
         if teamlead:
             parts.append(f"team_lead: {teamlead}")
         if start_date:
@@ -196,6 +196,17 @@ class HRSheetProcessor(BaseProcessor):
                 "category: HR lifecycle\n"
                 "tz: Europe/Moscow\n"
                 "body_format: kv-lines\n"
+                "body_format_fields:\n"
+                "  person: Employee name\n"
+                "  current_position: Current position/title\n"
+                "  department: Department\n"
+                "  team_lead: Team lead\n"
+                "  start_date: Employment start date\n"
+                "  probation_end: Probation end date\n"
+                "  probation_passed: Probation passed status\n"
+                "  termination_status: Termination status\n"
+                "  termination_date: Termination date\n"
+                "  termination_reason: Termination reason\n"
                 "---\n\n"
             )
 

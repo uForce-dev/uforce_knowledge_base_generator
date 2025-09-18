@@ -195,6 +195,10 @@ class MattermostProcessor(BaseProcessor):
                     f"  start: {format_date_ymd_msk(period_start_dt)}\n"
                     f"  end: {format_date_ymd_msk(period_end_dt)}\n"
                     "body_format: kv-lines\n"
+                    "body_format_fields:\n"
+                    "  datetime: Message date and time (MSK)\n"
+                    "  user: Mattermost username\n"
+                    "  message: Message text (cleaned)\n"
                     "---\n\n"
                 )
 
