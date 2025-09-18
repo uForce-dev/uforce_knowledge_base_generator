@@ -210,16 +210,13 @@ class HRSheetProcessor(BaseProcessor):
                 "---\n\n"
             )
 
-            file_suffix = (
-                f"_{first_dt}_to_{last_dt}"
-                if first_dt != "unknown" or last_dt != "unknown"
-                else ""
-            )
-            file_name = (
-                f"hr_people_knowledge_part_{idx}{file_suffix}.txt"
-                if len(chunks) > 1
-                else "hr_people_knowledge.txt"
-            )
+            # Deprecated old suffix logic; using Variant 1 naming
+            total_parts = len(chunks)
+            base_name = f"hr__people__{first_dt}__{last_dt}"
+            if total_parts > 1:
+                file_name = f"{base_name}__part_{idx}_of_{total_parts}.txt"
+            else:
+                file_name = f"{base_name}.txt"
             output_path: Path = settings.hr_temp_dir / file_name
             try:
                 with open(output_path, "w", encoding="utf-8") as f:

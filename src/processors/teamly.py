@@ -571,8 +571,10 @@ class TeamlyProcessor(BaseProcessor):
                 if not combined_chunks:
                     continue
                 folder_name = group_titles.get(second_id) or second_id
-                safe_folder_name = re.sub(r"[^\w\-_. ]+", "_", folder_name)
-                combined_txt = temp_dir / f"{safe_folder_name}.txt"
+                safe_folder_name = re.sub(r"[^\w\-_. ]+", "_", folder_name).replace(
+                    " ", "_"
+                )
+                combined_txt = temp_dir / f"teamly__{safe_folder_name}.txt"
                 try:
                     with open(combined_txt, "w", encoding="utf-8") as f:
                         f.write("---\n")
@@ -601,8 +603,10 @@ class TeamlyProcessor(BaseProcessor):
                 ]
                 if not combined_chunks:
                     continue
-                safe_folder_name = re.sub(r"[^\w\-_. ]+", "_", folder_name)
-                combined_txt = temp_dir / f"{safe_folder_name}.txt"
+                safe_folder_name = re.sub(r"[^\w\-_. ]+", "_", folder_name).replace(
+                    " ", "_"
+                )
+                combined_txt = temp_dir / f"teamly__{safe_folder_name}.txt"
                 try:
                     with open(combined_txt, "w", encoding="utf-8") as f:
                         f.write("---\n")

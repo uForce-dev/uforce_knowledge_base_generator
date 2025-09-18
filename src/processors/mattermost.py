@@ -202,7 +202,10 @@ class MattermostProcessor(BaseProcessor):
                     "---\n\n"
                 )
 
-                file_name = f"mattermost_posts_{channel_name}_{format_date_ymd_msk(period_start_dt)}_to_{format_date_ymd_msk(period_end_dt)}.txt"
+                safe_channel = re.sub(r"[^\w\-_. ]+", "_", channel_name).replace(
+                    " ", "_"
+                )
+                file_name = f"mattermost__{safe_channel}__{format_date_ymd_msk(period_start_dt)}__{format_date_ymd_msk(period_end_dt)}.txt"
                 file_path = settings.mattermost_temp_dir / file_name
 
                 try:
